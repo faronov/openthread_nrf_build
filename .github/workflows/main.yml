@@ -1,0 +1,81 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Build OpenWrt
+
+on:
+  repository_dispatch:
+  workflow_dispatch:
+    inputs:
+      ssh:
+        description: 'SSH connection to Actions'
+        required: false
+        default: 'false'
+      platform:
+        description: 'Select platform'
+        required: true
+        with: 
+          nrf52840: nrf52840
+          efr32mg1: ef32mg1
+#  schedule:
+#    - cron: 0 8 * * 5
+
+env:
+  REPO_URL: https://github.com/openthread/openthread
+  REPO_BRANCH: master
+  UPLOAD_BIN_DIR: false
+  UPLOAD_FIRMWARE: true
+  UPLOAD_RELEASE: false
+  TZ: Europe/Tallinn
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
+
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+    - name: Clone source code
+      working-directory: /workdir
+      run: |
+        df -hT $PWD
+        git clone $REPO_URL -b $REPO_BRANCH openthread
+        ln -sf /workdir/openthread $GITHUB_WORKSPACE/openthread
+        
+    - name: SSH connection to Actions
+      uses: P3TERX/ssh2actions@v1.0.0
+      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
+      env:
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+
+    - name: Compile the firmware
+      id: compile
+      run: |
+        cd openthread
+        ./script/bootstrap
+        ./bootstrap
+        make -f examples/Makefile-nrf52840 USB=1 BOOTLOADER=USB
+        arm-none-eabi-objcopy -O ihex output/nrf52840/bin/ot-cli-ftd output/nrf52840/bin/ot-cli-ftd.hex
+
+    - name: Check space usage
+      if: (!cancelled())
+      run: df -hT
+   
+    - name: Upload bin directory
+      uses: actions/upload-artifact@main
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      with:
+        name: openthread_${{ env.FILE_DATE }}
+        path: output/nrf52840/bin
