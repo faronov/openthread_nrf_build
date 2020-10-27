@@ -67,11 +67,9 @@ jobs:
         
     - name: Build openthread
       id: compile
-      env: 
-        PATH: /opt/gcc-arm-none-eabi-9-2020-q2-update/bin/:$PATH
       run: |
         cd openthread
-        make -f examples/Makefile-nrf52840 USB=1 BOOTLOADER=USB
+        export PATH=$PATH:/opt/gcc-arm-none-eabi-9-2020-q2-update/bin/ && make -f examples/Makefile-nrf52840 USB=1 BOOTLOADER=USB
         arm-none-eabi-objcopy -O ihex output/nrf52840/bin/ot-cli-ftd output/nrf52840/bin/ot-cli-ftd.hex
 
     - name: Check space usage
