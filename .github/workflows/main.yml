@@ -13,9 +13,7 @@ on:
       platform:
         description: 'Select platform'
         required: true
-        with: 
-          nrf52840: nrf52840
-          efr32mg1: ef32mg1
+        default: nrf52840
 #  schedule:
 #    - cron: 0 8 * * 5
 
