@@ -58,13 +58,19 @@ jobs:
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
-    - name: Compile the firmware
-      id: compile
+    - name: Bootstrap
+      id: bootstrap
       run: |
         cd openthread
         ./script/bootstrap
         ./bootstrap
-        export PATH=/opt/gcc-arm-none-eabi-9-2020-q2-update/bin/:$PATH
+        
+    - name: Build openthread
+      id: compile
+      env: 
+        PATH: /opt/gcc-arm-none-eabi-9-2020-q2-update/bin/:$PATH
+      run: |
+        cd openthread
         make -f examples/Makefile-nrf52840 USB=1 BOOTLOADER=USB
         arm-none-eabi-objcopy -O ihex output/nrf52840/bin/ot-cli-ftd output/nrf52840/bin/ot-cli-ftd.hex
 
