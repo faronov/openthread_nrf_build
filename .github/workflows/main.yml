@@ -64,6 +64,7 @@ jobs:
         cd openthread
         ./script/bootstrap
         ./bootstrap
+        export PATH=/usr/local/bin/$PATH
         make -f examples/Makefile-nrf52840 USB=1 BOOTLOADER=USB
         arm-none-eabi-objcopy -O ihex output/nrf52840/bin/ot-cli-ftd output/nrf52840/bin/ot-cli-ftd.hex
 
